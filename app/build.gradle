@@ -13,6 +13,7 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "GOODREADS_API_KEY", GOODREADS_API_KEY)
     }
     buildTypes {
         release {
@@ -20,12 +21,18 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation"org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
     implementation 'com.android.support:appcompat-v7:26.1.0'
+    compile 'com.github.kittinunf.fuel:fuel:' + rootProject.fuelLibVersion
+    compile 'com.github.kittinunf.fuel:fuel-android:' + rootProject.fuelLibVersion
+    compile 'com.github.kittinunf.fuel:fuel-jackson:' + rootProject.fuelLibVersion
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'

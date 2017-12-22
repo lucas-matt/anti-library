@@ -1,13 +1,16 @@
 package com.lucasmatt.antilibrary.goodreads
 
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.dataformat.xml.XmlMapper
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.github.kittinunf.fuel.core.FuelManager
 import com.github.kittinunf.fuel.core.ResponseDeserializable
 import com.github.kittinunf.fuel.httpGet
 import com.lucasmatt.antilibrary.BuildConfig
+import org.simpleframework.xml.Element
+import org.simpleframework.xml.ElementList
+import org.simpleframework.xml.Root
+import org.simpleframework.xml.Serializer
+import org.simpleframework.xml.core.Persister
+
+
 
 class Goodreads(private val user:String) {
 
@@ -16,45 +19,58 @@ class Goodreads(private val user:String) {
             FuelManager.instance.basePath = "https://www.goodreads.com"
             FuelManager.instance.baseParams = listOf(Pair("key", BuildConfig.GOODREADS_API_KEY))
         }
-        val MAPPER = {
-            val mapper = XmlMapper()
-            mapper.registerModule(KotlinModule())
-            mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
-            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            mapper
-        }()
+
+        val SERIALIZER: Serializer = Persister()
     }
 
-    data class UserResponse(val user: User) {
+    @Root(strict=false, name="GoodreadsResponse")
+    data class UserResponse(@field:Element var user: User) {
+        constructor(): this(User())
         class Deserializer: ResponseDeserializable<UserResponse> {
-            override fun deserialize(bytes: ByteArray) = MAPPER.readValue(bytes, UserResponse::class.java)
+            override fun deserialize(bytes: ByteArray) = SERIALIZER.read(UserResponse::class.java, bytes.inputStream())
         }
     }
 
-    data class User(val id: String, val name: String)
+    @Root(strict=false)
+    data class User(@field:Element var id: String, @field:Element var name: String) {
+        constructor(): this("", "")
+    }
 
-    data class ShelvesResponse(val shelves: List<Shelf>) {
+    @Root(strict=false, name="GoodreadsResponse")
+    data class ShelvesResponse(@field:ElementList var shelves: List<Shelf>) {
+        constructor(): this(mutableListOf())
         class Deserializer: ResponseDeserializable<ShelvesResponse> {
-            override fun deserialize(bytes: ByteArray) = MAPPER.readValue(bytes, ShelvesResponse::class.java)
+            override fun deserialize(bytes: ByteArray) = SERIALIZER.read(ShelvesResponse::class.java, bytes.inputStream())
         }
     }
 
-    data class Shelf(val id: String?,
-                     val name: String)
+    @Root(strict=false)
+    data class Shelf(@field:Element var id: String?,
+                     @field:Element var name: String) {
+        constructor(): this(null, "")
+    }
 
-    data class ShelfContentsResponse(val reviews: List<Review>) {
+    @Root(strict=false, name="GoodreadsResponse")
+    data class ShelfContentsResponse(@field:ElementList var reviews: List<Review>) {
+        constructor(): this(mutableListOf())
         class Deserializer: ResponseDeserializable<ShelfContentsResponse> {
-            override fun deserialize(bytes: ByteArray) = MAPPER.readValue(bytes, ShelfContentsResponse::class.java)
+            override fun deserialize(bytes: ByteArray) = SERIALIZER.read(ShelfContentsResponse::class.java, bytes.inputStream())
         }
     }
 
-    data class Review(val id: String, val book: Book)
+    @Root(strict=false)
+    data class Review(@field:Element var id: String, @field:Element() var book: Book) {
+        constructor(): this("", Book())
+    }
 
-    data class Book(val id: String,
-                    val title: String,
-                    @JsonProperty("image_url") val imageUrl: String?,
-                    @JsonProperty("small_image_url") val smallImageUrl: String?,
-                    @JsonProperty("large_image_url") val largeImageUrl: String?)
+    @Root(strict=false)
+    data class Book(@field:Element var id: String,
+                    @field:Element var title: String,
+                    @field:Element(name="image_url", required=false) var imageUrl: String?,
+                    @field:Element(name="small_image_url", required=false) var smallImageUrl: String?,
+                    @field:Element(name="large_image_url", required=false) var largeImageUrl: String?) {
+        constructor() : this("", "", null, null, null)
+    }
 
     fun userInfo(): User {
         val (_, resp, res) = "/user/show/$user".httpGet().responseObject(UserResponse.Deserializer())
@@ -80,7 +96,7 @@ class Goodreads(private val user:String) {
 
     fun contentsOf(shelf:Shelf): List<Book> {
         val (_, resp, res) = "/review/list"
-                .httpGet(listOf("id" to user, "v" to 2, "shelf" to shelf.name))
+                .httpGet(listOf("id" to user, "v" to 2, "shelf" to shelf.name, "per_page" to 200))
                 .responseObject(ShelfContentsResponse.Deserializer())
         return when(resp.statusCode) {
             200 -> {

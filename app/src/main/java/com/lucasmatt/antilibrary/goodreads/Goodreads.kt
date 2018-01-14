@@ -1,9 +1,15 @@
 package com.lucasmatt.antilibrary.goodreads
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.net.Uri
 import com.github.kittinunf.fuel.core.FuelManager
 import com.github.kittinunf.fuel.core.ResponseDeserializable
 import com.github.kittinunf.fuel.httpGet
+import com.github.kittinunf.fuel.rx.rx_object
 import com.lucasmatt.antilibrary.BuildConfig
+import com.squareup.picasso.Picasso
+import io.reactivex.Single
 import org.simpleframework.xml.Element
 import org.simpleframework.xml.ElementList
 import org.simpleframework.xml.Root
@@ -69,7 +75,21 @@ class Goodreads(private val user:String) {
                     @field:Element(name="image_url", required=false) var imageUrl: String?,
                     @field:Element(name="small_image_url", required=false) var smallImageUrl: String?,
                     @field:Element(name="large_image_url", required=false) var largeImageUrl: String?) {
+
         constructor() : this("", "", null, null, null)
+
+        fun asBitmap(ctx: Context): Bitmap? {
+            return listOf(largeImageUrl, imageUrl, smallImageUrl)
+                    .filter { img -> !img.isNullOrBlank() }
+                    .map { img ->
+                        val uri = Uri.parse(img)
+                        Picasso.with(ctx)
+                                .load(uri)
+                                .get()
+                    }
+                    .first()
+        }
+
     }
 
     fun userInfo(): User {
@@ -82,28 +102,25 @@ class Goodreads(private val user:String) {
         }
     }
 
-    fun shelves(): List<Shelf> {
-        val (_, resp, res) = "/shelf/list.xml"
+    fun shelves(): Single<List<Shelf>> {
+        return "/shelf/list.xml"
                 .httpGet(listOf("user_id" to user))
-                .responseObject(ShelvesResponse.Deserializer())
-        return when(resp.statusCode) {
-            200 -> {
-                res.get().shelves
-            }
-            else -> throw RuntimeException(resp.responseMessage)
-        }
+                .rx_object(ShelvesResponse.Deserializer())
+                .map { it?.component1()?.shelves }
     }
 
-    fun contentsOf(shelf:Shelf): List<Book> {
-        val (_, resp, res) = "/review/list"
+    fun contentsOf(shelf: Goodreads.Shelf): Single<List<Goodreads.Book>> {
+        return "/review/list"
                 .httpGet(listOf("id" to user, "v" to 2, "shelf" to shelf.name, "per_page" to 200))
-                .responseObject(ShelfContentsResponse.Deserializer())
-        return when(resp.statusCode) {
-            200 -> {
-                res.get().reviews.map { review -> review.book }
-            }
-            else -> throw RuntimeException(resp.responseMessage)
-        }
+                .rx_object(ShelfContentsResponse.Deserializer())
+                .flatMap { it?.component1()?.reviews }
+
+//        return when(resp.statusCode) {
+//            200 -> {
+//                res.get().reviews.map { review -> review.book }
+//            }
+//            else -> throw RuntimeException(resp.responseMessage)
+//        }
     }
 
 }

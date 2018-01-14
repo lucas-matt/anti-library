@@ -1,11 +1,15 @@
 package com.lucasmatt.antilibrary.utils
 
+import android.graphics.Bitmap
+import android.net.Uri
+import android.view.View
+import com.squareup.picasso.Picasso
 import java.util.*
 
 fun <T> List<T>.random(): Pair<T, List<T>> {
     val idx = Random().nextInt(this.size)
     val l = this.get(idx)
-    val ls = this.filterIndexed { i, t -> i != idx }
+    val ls = this.filterIndexed { i, _ -> i != idx }
     return Pair(l, ls)
 }
 

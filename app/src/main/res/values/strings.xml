@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">antilibrary</string>
+    <string name="title_activity_settings">antilibrary</string>
 </resources>

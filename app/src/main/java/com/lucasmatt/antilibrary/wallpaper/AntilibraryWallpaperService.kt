@@ -92,13 +92,13 @@ class AntilibraryWallpaperService : WallpaperService() {
                 if (canvas != null) {
 //                    canvas?.drawColor(Color.GREEN)
 
-                    val shelf = goodreads.shelves().get(0)
-                    val img = goodreads.contentsOf(shelf).get(0).asBitmap(applicationContext)
+//                    val shelf = goodreads.shelves().get(0)
+//                    val img = goodreads.contentsOf(shelf).get(0).asBitmap(applicationContext)
 
                     val paint = Paint()
                     paint.color = Color.WHITE
                     paint.setAntiAlias(true);
-                    canvas?.drawBitmap(img, 0f, 0f, paint)
+                    //canvas?.drawBitmap(img, 0f, 0f, paint)
 //                    canvas?.drawCircle(0f, 0f, 100.0f, paint)
                 }
             } finally {

@@ -30,7 +30,7 @@ class GoodreadsTest {
             </GoodreadsResponse>
         }""")
         val goodreads = Goodreads("myuser")
-        val user = goodreads.userInfo()
+        val user = goodreads.userInfo().blockingGet()
         assertEquals("61058109", user.id)
         assertEquals("Mr Black", user.name)
     }
@@ -56,7 +56,7 @@ class GoodreadsTest {
            </GoodreadsResponse>
         """)
         val goodreads = Goodreads("myuser")
-        val shelves = goodreads.shelves()
+        val shelves = goodreads.shelves().blockingGet()
         val ids = shelves.map { shelf -> shelf.id }
         val names = shelves.map { shelf -> shelf.name }
         assertEquals(listOf("199496770", "183639273", "219283629"), ids)
@@ -83,7 +83,7 @@ class GoodreadsTest {
            </GoodreadsResponse>
         """)
         val goodreads = Goodreads("myuser")
-        val books = goodreads.contentsOf(Goodreads.Shelf("1", "read"))
+        val books = goodreads.contentsOf(Goodreads.Shelf("1", "read")).blockingGet()
         val book = books.get(0)
         assertEquals(Goodreads.Book("20828370", "The Wild Truth: A Memoir", "img.jpg", "small.jpg", "large.jpg"), book)
     }

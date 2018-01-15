@@ -17,7 +17,6 @@ import org.simpleframework.xml.Serializer
 import org.simpleframework.xml.core.Persister
 
 
-
 class Goodreads(private val user:String) {
 
     companion object {
@@ -92,14 +91,11 @@ class Goodreads(private val user:String) {
 
     }
 
-    fun userInfo(): User {
-        val (_, resp, res) = "/user/show/$user".httpGet().responseObject(UserResponse.Deserializer())
-        return when(resp.statusCode) {
-            200 -> {
-                res.get().user
-            }
-            else -> throw RuntimeException(resp.responseMessage)
-        }
+    fun userInfo(): Single<User> {
+        return "/user/show/$user"
+                .httpGet()
+                .rx_object(UserResponse.Deserializer())
+                .map { it?.component1()?.user }
     }
 
     fun shelves(): Single<List<Shelf>> {
@@ -113,14 +109,7 @@ class Goodreads(private val user:String) {
         return "/review/list"
                 .httpGet(listOf("id" to user, "v" to 2, "shelf" to shelf.name, "per_page" to 200))
                 .rx_object(ShelfContentsResponse.Deserializer())
-                .flatMap { it?.component1()?.reviews }
-
-//        return when(resp.statusCode) {
-//            200 -> {
-//                res.get().reviews.map { review -> review.book }
-//            }
-//            else -> throw RuntimeException(resp.responseMessage)
-//        }
+                .map { it?.component1()?.reviews?.map { it.book } }
     }
 
 }
